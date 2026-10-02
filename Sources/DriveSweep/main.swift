@@ -1,0 +1,18 @@
+import AppKit
+
+// Command-line mode for testing: DriveSweep --clean /Volumes/SDCARD
+if let i = CommandLine.arguments.firstIndex(of: "--clean"), i + 1 < CommandLine.arguments.count {
+    let url = URL(fileURLWithPath: CommandLine.arguments[i + 1])
+    guard Volumes.isEligible(url) else {
+        print("Not an eligible external volume: \(url.path)")
+        exit(1)
+    }
+    print(Sweeper.clean(volume: url).summary)
+    exit(0)
+}
+
+let app = NSApplication.shared
+let delegate = AppDelegate()
+app.delegate = delegate
+app.setActivationPolicy(.accessory)
+app.run()
