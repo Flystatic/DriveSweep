@@ -1,0 +1,21 @@
+DriveSweep — removes macOS junk (.DS_Store, ._ files, .Spotlight-V100, .fseventsd,
+.Trashes, ...) from SD cards and external drives.
+
+INSTALL
+1. Drag DriveSweep into the Applications folder.
+2. Open Applications, right-click DriveSweep, choose Open, then Open again.
+   (macOS asks because this app isn't from the App Store.)
+   If there's no Open button: System Settings > Privacy & Security >
+   scroll down > "Open Anyway" next to DriveSweep.
+3. A drive icon appears in the menu bar.
+4. Click it > "Set Up Spotlight Helper...". In System Settings > Login Items,
+   switch DriveSweep on under "Allow in the Background".
+   The menu should now say "Spotlight Helper: On".
+
+USE
+- Eject a drive normally: it is cleaned first.
+- Or right-click a drive in Finder > Services > Clean Junk Files.
+- Or use the menu bar icon: Clean / Clean & Eject.
+
+Only external drives are touched. Never your main disk, Time Machine, or network drives.
+Note: deleting ._ files also removes Finder tags/labels on files on that drive.
