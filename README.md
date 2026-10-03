@@ -13,6 +13,12 @@ Only touches external/removable drives. Never the internal disk, Time Machine, o
 Turn it on from the menu bar icon → "Set Up Spotlight Helper…", then switch DriveSweep on in
 System Settings → Login Items. The helper only ever runs `mdutil -X` on a verified external drive.
 
+## Download
+Get `DriveSweep-x.y.dmg` from the [Releases](https://github.com/Flystatic/DriveSweep/releases) page.
+Open it, drag DriveSweep into Applications, and follow "How to Install.txt".
+The app isn't signed with an Apple Developer ID, so the first launch needs
+right-click → Open (or System Settings → Privacy & Security → Open Anyway).
+
 ## Build
 ```
 ./build.sh      # → build/DriveSweep.app (Apple silicon + Intel, macOS 13+)
