@@ -5,20 +5,23 @@ struct SweepResult {
     var bytes: Int64 = 0
     var failed = 0
     var timedOut = false
+    var spotlightLeft = false
 
     var summary: String {
         let size = ByteCountFormatter.string(fromByteCount: bytes, countStyle: .file)
         var s = removed == 0 ? "Already clean" : "Removed \(removed) junk item\(removed == 1 ? "" : "s") (\(size))"
         if failed > 0 { s += ", \(failed) couldn't be removed" }
         if timedOut { s += ", stopped early (time limit)" }
+        if spotlightLeft { s += ". Spotlight folder needs the helper (see menu)" }
         return s
     }
 }
 
 enum Sweeper {
     /// Folders/files removed only when they sit at the top of the volume.
+    /// (.Spotlight-V100 is locked by macOS; SpotlightHelper removes it as root.)
     static let rootJunk: Set<String> = [
-        ".Spotlight-V100", ".fseventsd", ".Trashes", ".TemporaryItems",
+        ".fseventsd", ".Trashes", ".TemporaryItems",
         ".DocumentRevisions-V100", ".apdisk",
     ]
 
@@ -50,6 +53,11 @@ enum Sweeper {
             let path = String(cString: e.fts_path)
             let isTopLevel = e.fts_level == 1
             let size = Int64(e.fts_statp?.pointee.st_blocks ?? 0) * 512
+
+            if isTopLevel, info == FTS_D, path.hasSuffix("/.Spotlight-V100") {
+                fts_set(fts, entry, FTS_SKIP)
+                continue
+            }
 
             if junkRoots.contains(where: { path == $0 || path.hasPrefix($0 + "/") }) {
                 switch info {

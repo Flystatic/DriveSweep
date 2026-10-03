@@ -27,7 +27,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         watcher = DiskWatcher(
             isEnabled: { [weak self] in self?.cleanOnEject ?? false },
             onCleaned: { [weak self] name, result in
-                if result.removed > 0 || result.failed > 0 { self?.notify(name, result) }
+                if result.removed > 0 || result.failed > 0 || result.spotlightLeft { self?.notify(name, result) }
             })
 
         UNUserNotificationCenter.current().requestAuthorization(options: [.alert]) { _, _ in }
@@ -77,6 +77,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         eject.target = self
         eject.state = cleanOnEject ? .on : .off
 
+        if SpotlightHelper.isReady {
+            menu.addItem(withTitle: "Spotlight Helper: On", action: nil, keyEquivalent: "")
+        } else {
+            let helper = menu.addItem(withTitle: "Set Up Spotlight Helper…", action: #selector(setUpHelper), keyEquivalent: "")
+            helper.target = self
+        }
+
         let login = menu.addItem(withTitle: "Open at Login", action: #selector(toggleLogin), keyEquivalent: "")
         login.target = self
         login.state = SMAppService.mainApp.status == .enabled ? .on : .off
@@ -92,6 +99,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
     @objc private func toggleCleanOnEject() { cleanOnEject.toggle() }
 
+    /// Registers the root helper; macOS then needs the user to switch it on in Login Items.
+    @objc private func setUpHelper() {
+        try? SpotlightHelper.service.register()
+        if !SpotlightHelper.isReady { SMAppService.openSystemSettingsLoginItems() }
+    }
+
     @objc private func toggleLogin() {
         if SMAppService.mainApp.status == .enabled {
             try? SMAppService.mainApp.unregister()
@@ -105,7 +118,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private func clean(_ volume: URL, thenEject: Bool) {
         let name = Volumes.name(of: volume)
         work.async { [self] in
-            let result = Sweeper.clean(volume: volume)
+            let result = Sweeper.fullClean(volume: volume)
             guard thenEject else { return notify(name, result) }
             do {
                 try NSWorkspace.shared.unmountAndEjectDevice(at: volume)

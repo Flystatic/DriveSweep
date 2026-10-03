@@ -38,5 +38,21 @@ cat > "$APP/Contents/Info.plist" <<'PLIST'
 </plist>
 PLIST
 
-codesign --force --sign - "$APP"
+# Root helper (same binary, run with --helper). Registered via SMAppService.daemon.
+mkdir -p "$APP/Contents/Library/LaunchDaemons"
+cat > "$APP/Contents/Library/LaunchDaemons/local.drivesweep.helper.plist" <<'PLIST'
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key><string>local.drivesweep.helper</string>
+    <key>BundleProgram</key><string>Contents/MacOS/DriveSweep</string>
+    <key>ProgramArguments</key><array><string>DriveSweep</string><string>--helper</string></array>
+    <key>MachServices</key><dict><key>local.drivesweep.helper</key><true/></dict>
+    <key>AssociatedBundleIdentifiers</key><array><string>local.drivesweep</string></array>
+</dict>
+</plist>
+PLIST
+
+codesign --force --sign - --identifier local.drivesweep "$APP"
 echo "Built $APP"
