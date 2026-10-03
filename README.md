@@ -9,8 +9,9 @@ Removes macOS junk (`.DS_Store`, `._*`, `.Spotlight-V100`, `.fseventsd`, `.Trash
 
 Only touches external/removable drives. Never the internal disk, Time Machine, or network drives.
 
-Note: macOS always rewrites a tiny `.fseventsd/fseventsd-uuid` (36 bytes) at the moment of
-unmount. No app without root access can stop that.
+`.Spotlight-V100` is locked by macOS, so a small root helper removes it with `mdutil -X`.
+Turn it on from the menu bar icon → "Set Up Spotlight Helper…", then switch DriveSweep on in
+System Settings → Login Items. The helper only ever runs `mdutil -X` on a verified external drive.
 
 ## Build
 ```
@@ -20,3 +21,4 @@ unmount. No app without root access can stop that.
 
 ## Install on another Mac
 Copy `DriveSweep.app` to `/Applications`, then right-click → Open the first time.
+Then set up the Spotlight helper from the menu bar icon (see above).
