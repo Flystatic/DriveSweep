@@ -29,58 +29,51 @@ enum Sweeper {
 
     /// Uses fts + unlink rather than FileManager: Foundation hides "._" files from every
     /// listing, so it can neither find them nor empty a folder that contains them.
+    ///
+    /// Every entry is judged on its own path — no "currently deleting" state. (An earlier
+    /// version tracked state and, when a junk folder couldn't be read, never left
+    /// delete mode and wiped the rest of the drive.)
     static func clean(volume root: URL, deadline: Date = .distantFuture) -> SweepResult {
         var result = SweepResult()
-        var argv: [UnsafeMutablePointer<CChar>?] = [strdup(root.standardizedFileURL.path), nil]
+        let rootPath = root.standardizedFileURL.path
+        let junkRoots = rootJunk.map { (rootPath as NSString).appendingPathComponent($0) }
+
+        var argv: [UnsafeMutablePointer<CChar>?] = [strdup(rootPath), nil]
         defer { free(argv[0]) }
         guard let fts = fts_open(&argv, FTS_PHYSICAL | FTS_NOCHDIR | FTS_XDEV, nil) else { return result }
         defer { fts_close(fts) }
-
-        var junkDir: String?  // root-level junk folder currently being emptied
 
         while let entry = fts_read(fts) {
             if Date() > deadline { result.timedOut = true; break }
             let e = entry.pointee
             let info = Int32(e.fts_info)
             let path = String(cString: e.fts_path)
-            let name = (path as NSString).lastPathComponent
+            let isTopLevel = e.fts_level == 1
             let size = Int64(e.fts_statp?.pointee.st_blocks ?? 0) * 512
 
-            if let dir = junkDir {
-                if info == FTS_DP {
+            if junkRoots.contains(where: { path == $0 || path.hasPrefix($0 + "/") }) {
+                switch info {
+                case FTS_D:
+                    break  // handled on the post-order (FTS_DP) visit, once emptied
+                case FTS_DP:
                     let ok = rmdir(path) == 0
-                    if path == dir {
-                        if ok { result.removed += 1 } else { result.failed += 1 }
-                        junkDir = nil
-                    }
-                } else if info != FTS_D, unlink(path) == 0 {
+                    if isTopLevel { if ok { result.removed += 1 } else { result.failed += 1 } }
+                case FTS_DNR, FTS_ERR, FTS_NS:
+                    if isTopLevel { result.failed += 1 }
+                default:
+                    let ok = unlink(path) == 0
+                    if ok { result.bytes += size }
+                    if isTopLevel { if ok { result.removed += 1 } else { result.failed += 1 } }
+                }
+            } else if info == FTS_F, isJunkFile((path as NSString).lastPathComponent) {
+                if unlink(path) == 0 {
+                    result.removed += 1
                     result.bytes += size
+                } else if errno != ENOENT {  // ENOENT: "._x" already went away with its partner file
+                    result.failed += 1
                 }
-                continue
-            }
-
-            if e.fts_level == 1, rootJunk.contains(name) {
-                if info == FTS_D {
-                    junkDir = path
-                } else {
-                    delete(path, size, &result)
-                }
-                continue
-            }
-
-            if info == FTS_F, isJunkFile(name) {
-                delete(path, size, &result)
             }
         }
         return result
-    }
-
-    private static func delete(_ path: String, _ size: Int64, _ result: inout SweepResult) {
-        if unlink(path) == 0 {
-            result.removed += 1
-            result.bytes += size
-        } else if errno != ENOENT {  // ENOENT: "._x" already went away with its partner file
-            result.failed += 1
-        }
     }
 }

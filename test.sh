@@ -62,5 +62,23 @@ ls -A "$VOL"
 check_clean "eject"
 diskutil eject "$VOL" >/dev/null
 
+echo "== Test 3: unreadable junk folder must not wipe the drive (regression) =="
+IMG3=$TMP/hfs.dmg; VOL3=/Volumes/DSTEST3
+hdiutil create -quiet -size 32m -fs HFS+ -volname DSTEST3 "$IMG3"
+hdiutil attach -quiet "$IMG3"; for _ in {1..20}; do [[ -d $VOL3 ]] && break; sleep 0.25; done
+mkdir -p "$VOL3/.TemporaryItems/inner" "$VOL3/AAA" "$VOL3/DCIM/100CANON" "$VOL3/ZZZ"
+for f in AAA/a.txt DCIM/100CANON/IMG_0001.JPG ZZZ/z.txt top.txt; do echo keep > "$VOL3/$f"; done
+echo x > "$VOL3/ZZZ/.DS_Store"
+chmod 000 "$VOL3/.TemporaryItems"
+$BIN --clean "$VOL3"
+chmod 755 "$VOL3/.TemporaryItems"
+missing=0
+for f in AAA/a.txt DCIM/100CANON/IMG_0001.JPG ZZZ/z.txt top.txt; do
+    [[ -f $VOL3/$f ]] || { echo "FAIL (unreadable): deleted real file $f"; missing=1; fail=1; }
+done
+(( missing )) || echo "PASS (unreadable): all real files kept"
+[[ -e $VOL3/ZZZ/.DS_Store ]] && { echo "FAIL (unreadable): .DS_Store left"; fail=1; } || echo "PASS (unreadable): junk after it still cleaned"
+diskutil eject "$VOL3" >/dev/null
+
 rm -rf "$TMP"
 exit $fail
