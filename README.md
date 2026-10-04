@@ -1,4 +1,10 @@
-# Ejectus
+<p align="center">
+  <img src="icon/icon.png" width="160" alt="Ejectus icon">
+</p>
+
+<h1 align="center">Ejectus</h1>
+
+<p align="center">Cleans macOS junk off SD cards and external drives when you eject them.</p>
 
 Removes macOS junk (`.DS_Store`, `._*`, `.Spotlight-V100`, `.fseventsd`, `.Trashes`,
 `.TemporaryItems`, `.DocumentRevisions-V100`, `.apdisk`) from external drives.
