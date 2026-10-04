@@ -5,7 +5,7 @@ import Foundation
 /// The clean runs inside the unmount-approval callback, then we approve so the eject carries on.
 final class DiskWatcher {
     private let session: DASession
-    private let queue = DispatchQueue(label: "DriveSweep.diskarbitration")
+    private let queue = DispatchQueue(label: "Ejectus.diskarbitration")
     private let isEnabled: () -> Bool
     private let onCleaned: (String, SweepResult) -> Void
 

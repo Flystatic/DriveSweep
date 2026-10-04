@@ -2,11 +2,11 @@
 import PackageDescription
 
 let package = Package(
-    name: "DriveSweep",
+    name: "Ejectus",
     platforms: [.macOS(.v13)],
     targets: [
         .executableTarget(
-            name: "DriveSweep",
+            name: "Ejectus",
             linkerSettings: [.linkedFramework("DiskArbitration")]
         )
     ]

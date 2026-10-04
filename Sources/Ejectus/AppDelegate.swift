@@ -6,7 +6,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private var statusItem: NSStatusItem!
     private var watcher: DiskWatcher!
     private let defaults = UserDefaults.standard
-    private let work = DispatchQueue(label: "DriveSweep.work")
+    private let work = DispatchQueue(label: "Ejectus.work")
 
     private var cleanOnEject: Bool {
         get { defaults.object(forKey: "cleanOnEject") as? Bool ?? true }
@@ -16,7 +16,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
         statusItem.button?.image = NSImage(systemSymbolName: "externaldrive.badge.checkmark",
-                                           accessibilityDescription: "DriveSweep")
+                                           accessibilityDescription: "Ejectus")
         let menu = NSMenu()
         menu.delegate = self
         statusItem.menu = menu
@@ -89,7 +89,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         login.state = SMAppService.mainApp.status == .enabled ? .on : .off
 
         menu.addItem(.separator())
-        menu.addItem(withTitle: "Quit DriveSweep", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
+        menu.addItem(withTitle: "Quit Ejectus", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
     }
 
     @objc private func menuClean(_ sender: NSMenuItem) {

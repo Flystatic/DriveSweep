@@ -9,7 +9,7 @@ import ServiceManagement
 }
 
 enum SpotlightHelper {
-    static let label = "local.drivesweep.helper"
+    static let label = "local.ejectus.helper"
     static let service = SMAppService.daemon(plistName: "\(label).plist")
 
     static var isReady: Bool { service.status == .enabled }
@@ -70,7 +70,7 @@ enum SpotlightHelper {
 
     private final class Server: NSObject, NSXPCListenerDelegate, SpotlightHelperProtocol {
         func listener(_ listener: NSXPCListener, shouldAcceptNewConnection c: NSXPCConnection) -> Bool {
-            c.setCodeSigningRequirement("identifier \"local.drivesweep\"")
+            c.setCodeSigningRequirement("identifier \"local.ejectus\"")
             c.exportedInterface = NSXPCInterface(with: SpotlightHelperProtocol.self)
             c.exportedObject = self
             c.resume()

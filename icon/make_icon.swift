@@ -1,4 +1,4 @@
-// Draws the DriveSweep app icon: run `swift icon/make_icon.swift <out.png>` (1024×1024).
+// Draws the Ejectus app icon: run `swift icon/make_icon.swift <out.png>` (1024×1024).
 import AppKit
 
 let size: CGFloat = 1024

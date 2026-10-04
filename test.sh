@@ -2,7 +2,7 @@
 # End-to-end test on a FAT32 disk image: CLI clean, then clean-on-eject.
 set -uo pipefail
 cd "${0:A:h}"
-BIN=build/DriveSweep.app/Contents/MacOS/DriveSweep
+BIN=build/Ejectus.app/Contents/MacOS/Ejectus
 TMP=$(mktemp -d)
 IMG=$TMP/test.dmg
 VOL=/Volumes/DSTEST
