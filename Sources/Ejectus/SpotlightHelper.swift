@@ -97,8 +97,8 @@ enum SpotlightHelper {
 
 extension Sweeper {
     /// Everything: Spotlight folder via the helper, then the normal sweep.
-    static func fullClean(volume: URL, deadline: Date = .distantFuture) -> SweepResult {
-        var result = clean(volume: volume, deadline: deadline)
+    static func fullClean(volume: URL, deadline: Date = .distantFuture, emptyTrash: Bool = true) -> SweepResult {
+        var result = clean(volume: volume, deadline: deadline, emptyTrash: emptyTrash)
         switch SpotlightHelper.removeIndex(on: volume) {
         case true?: result.removed += 1
         case false?: result.spotlightLeft = true

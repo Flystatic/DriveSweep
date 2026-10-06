@@ -65,18 +65,21 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         for drive in drives {
             let header = menu.addItem(withTitle: Volumes.name(of: drive), action: nil, keyEquivalent: "")
             header.image = NSImage(systemSymbolName: "externaldrive", accessibilityDescription: nil)
-            for (title, eject) in [("Clean", false), ("Clean & Eject", true)] {
-                let item = menu.addItem(withTitle: title, action: #selector(menuClean(_:)), keyEquivalent: "")
-                item.target = self
-                item.indentationLevel = 1
-                item.representedObject = (drive, eject)
-            }
+            // No plain "Clean": macOS rebuilds Spotlight/fseventsd while a drive stays mounted.
+            let item = menu.addItem(withTitle: "Clean & Eject", action: #selector(menuCleanAndEject(_:)), keyEquivalent: "")
+            item.target = self
+            item.indentationLevel = 1
+            item.representedObject = drive
         }
         menu.addItem(.separator())
 
         let eject = menu.addItem(withTitle: "Clean When Ejecting", action: #selector(toggleCleanOnEject), keyEquivalent: "")
         eject.target = self
         eject.state = cleanOnEject ? .on : .off
+
+        let trash = menu.addItem(withTitle: "Empty Drive Trash", action: #selector(toggleEmptyTrash), keyEquivalent: "")
+        trash.target = self
+        trash.state = defaults.emptyDriveTrash ? .on : .off
 
         if SpotlightHelper.isReady {
             menu.addItem(withTitle: "Spotlight Helper: On", action: nil, keyEquivalent: "")
@@ -93,12 +96,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         menu.addItem(withTitle: "Quit Ejectus", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
     }
 
-    @objc private func menuClean(_ sender: NSMenuItem) {
-        guard let (drive, eject) = sender.representedObject as? (URL, Bool) else { return }
-        clean(drive, thenEject: eject)
+    @objc private func menuCleanAndEject(_ sender: NSMenuItem) {
+        guard let drive = sender.representedObject as? URL else { return }
+        clean(drive, thenEject: true)
     }
 
     @objc private func toggleCleanOnEject() { cleanOnEject.toggle() }
+
+    @objc private func toggleEmptyTrash() { defaults.emptyDriveTrash.toggle() }
 
     /// Registers the root helper; macOS then needs the user to switch it on in Login Items.
     @objc private func setUpHelper() {
@@ -119,7 +124,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private func clean(_ volume: URL, thenEject: Bool) {
         let name = Volumes.name(of: volume)
         work.async { [self] in
-            let result = Sweeper.fullClean(volume: volume)
+            let result = Sweeper.fullClean(volume: volume, emptyTrash: defaults.emptyDriveTrash)
             Self.log(thenEject ? "clean & eject" : "clean", name, result)
             guard thenEject else { return notify(name, result) }
             do {
@@ -158,5 +163,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         content.body = text
         UNUserNotificationCenter.current().add(
             UNNotificationRequest(identifier: UUID().uuidString, content: content, trigger: nil))
+    }
+}
+
+extension UserDefaults {
+    /// Whether cleaning empties the drive's own Trash (.Trashes). On by default.
+    var emptyDriveTrash: Bool {
+        get { object(forKey: "emptyDriveTrash") as? Bool ?? true }
+        set { set(newValue, forKey: "emptyDriveTrash") }
     }
 }

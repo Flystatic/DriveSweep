@@ -29,7 +29,8 @@ final class DiskWatcher {
               Volumes.isEligible(url)
         else { return }
 
-        let result = Sweeper.fullClean(volume: url, deadline: Date().addingTimeInterval(15))
+        let result = Sweeper.fullClean(volume: url, deadline: Date().addingTimeInterval(15),
+                                        emptyTrash: UserDefaults.standard.emptyDriveTrash)
         onCleaned(Volumes.name(of: url), result)
     }
 }

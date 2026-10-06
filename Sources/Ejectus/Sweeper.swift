@@ -38,10 +38,10 @@ enum Sweeper {
     /// Every entry is judged on its own path — no "currently deleting" state. (An earlier
     /// version tracked state and, when a junk folder couldn't be read, never left
     /// delete mode and wiped the rest of the drive.)
-    static func clean(volume root: URL, deadline: Date = .distantFuture) -> SweepResult {
+    static func clean(volume root: URL, deadline: Date = .distantFuture, emptyTrash: Bool = true) -> SweepResult {
         var result = SweepResult()
         let rootPath = root.standardizedFileURL.path
-        let junkRoots = rootJunk.map { (rootPath as NSString).appendingPathComponent($0) }
+        let junkRoots = rootJunk.subtracting(emptyTrash ? [] : [".Trashes"]).map { (rootPath as NSString).appendingPathComponent($0) }
 
         var argv: [UnsafeMutablePointer<CChar>?] = [strdup(rootPath), nil]
         defer { free(argv[0]) }
@@ -67,7 +67,9 @@ enum Sweeper {
                 continue
             }
 
-            if isTopLevel, info == FTS_D, path.hasSuffix("/.Spotlight-V100") {
+            // Left alone entirely: Spotlight (the helper handles it) and, if kept, the drive's Trash.
+            if isTopLevel, info == FTS_D,
+               path.hasSuffix("/.Spotlight-V100") || (!emptyTrash && path.hasSuffix("/.Trashes")) {
                 fts_set(fts, entry, FTS_SKIP)
                 continue
             }

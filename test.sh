@@ -80,5 +80,17 @@ done
 [[ -e $VOL3/ZZZ/.DS_Store ]] && { echo "FAIL (unreadable): .DS_Store left"; fail=1; } || echo "PASS (unreadable): junk after it still cleaned"
 diskutil eject "$VOL3" >/dev/null
 
+echo "== Test 4: --keep-trash leaves .Trashes alone =="
+mount_img
+mkdir -p "$VOL/.Trashes/501" "$VOL/Photos"
+echo trashed > "$VOL/.Trashes/501/deleted.txt"
+echo keep > "$VOL/Photos/keep.jpg"
+echo x > "$VOL/Photos/.DS_Store"
+$BIN --clean "$VOL" --keep-trash
+[[ -f $VOL/.Trashes/501/deleted.txt ]] && echo "PASS (keep-trash): trash kept" || { echo "FAIL (keep-trash): trash emptied"; fail=1; }
+[[ -e $VOL/Photos/.DS_Store ]] && { echo "FAIL (keep-trash): .DS_Store left"; fail=1; } || echo "PASS (keep-trash): other junk still cleaned"
+[[ -f $VOL/Photos/keep.jpg ]] && echo "PASS (keep-trash): real files kept" || { echo "FAIL (keep-trash): real file missing"; fail=1; }
+diskutil eject "$VOL" >/dev/null
+
 rm -rf "$TMP"
 exit $fail

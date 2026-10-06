@@ -11,7 +11,12 @@ Removes macOS junk (`.DS_Store`, `._*`, `.Spotlight-V100`, `.fseventsd`, `.Trash
 
 - **Finder:** right-click a drive → Services → **Clean Junk Files**
 - **Eject:** cleans automatically when you eject (toggle in the menu bar icon)
-- **Menu bar icon:** Clean / Clean & Eject per drive, Open at Login, Quit
+- **Menu bar icon:** Clean & Eject per drive, plus switches for Clean When Ejecting,
+  Empty Drive Trash (on by default; off keeps `.Trashes`), and Open at Login
+- **Log:** every clean is recorded in `~/Library/Logs/Ejectus.log`
+
+There's no plain "Clean" button: while a drive stays plugged in, macOS rebuilds
+`.Spotlight-V100` and `.fseventsd` within minutes, so cleaning only sticks at eject.
 
 Only touches external/removable drives. Never the internal disk, Time Machine, or network drives.
 
