@@ -18,6 +18,8 @@ USE
 - Or use the menu bar icon: Clean & Eject.
 - Menu switches: Clean When Ejecting, Empty Drive Trash (on by default),
   Open at Login. Every clean is logged to ~/Library/Logs/Ejectus.log.
+- Skip This Drive (under each drive in the menu): never clean that drive,
+  e.g. a Mac-only editing drive.
 
 Only external drives are touched. Never your main disk, Time Machine, or network drives.
 Note: deleting ._ files also removes Finder tags/labels on files on that drive.
