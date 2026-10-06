@@ -6,6 +6,7 @@ struct SweepResult {
     var failed = 0
     var timedOut = false
     var spotlightLeft = false
+    var errors: [String] = []  // first few failures, for the log
 
     var summary: String {
         let size = ByteCountFormatter.string(fromByteCount: bytes, countStyle: .file)
@@ -13,6 +14,7 @@ struct SweepResult {
         if failed > 0 { s += ", \(failed) couldn't be removed" }
         if timedOut { s += ", stopped early (time limit)" }
         if spotlightLeft { s += ". Spotlight folder needs the helper (see menu)" }
+        if bytes == 0, removed == 0, !errors.isEmpty { s = "Couldn't read the drive — see ~/Library/Logs/Ejectus.log" }
         return s
     }
 }
@@ -46,6 +48,10 @@ enum Sweeper {
         guard let fts = fts_open(&argv, FTS_PHYSICAL | FTS_NOCHDIR | FTS_XDEV, nil) else { return result }
         defer { fts_close(fts) }
 
+        func noteError(_ path: String, _ code: Int32) {
+            if result.errors.count < 20 { result.errors.append("\(path): \(String(cString: strerror(code)))") }
+        }
+
         while let entry = fts_read(fts) {
             if Date() > deadline { result.timedOut = true; break }
             let e = entry.pointee
@@ -53,6 +59,13 @@ enum Sweeper {
             let path = String(cString: e.fts_path)
             let isTopLevel = e.fts_level == 1
             let size = Int64(e.fts_statp?.pointee.st_blocks ?? 0) * 512
+
+            // The volume itself unreadable (e.g. macOS privacy block): nothing else will be visited.
+            if e.fts_level == 0, info == FTS_DNR || info == FTS_ERR {
+                noteError(path, e.fts_errno)
+                result.failed += 1
+                continue
+            }
 
             if isTopLevel, info == FTS_D, path.hasSuffix("/.Spotlight-V100") {
                 fts_set(fts, entry, FTS_SKIP)
@@ -65,12 +78,14 @@ enum Sweeper {
                     break  // handled on the post-order (FTS_DP) visit, once emptied
                 case FTS_DP:
                     let ok = rmdir(path) == 0
-                    if isTopLevel { if ok { result.removed += 1 } else { result.failed += 1 } }
+                    let gone = !ok && errno == ENOENT  // already removed by someone else: not a failure
+                    if !ok, !gone, isTopLevel { noteError(path, errno) }
+                    if isTopLevel, !gone { if ok { result.removed += 1 } else { result.failed += 1 } }
                 case FTS_DNR, FTS_ERR, FTS_NS:
-                    if isTopLevel { result.failed += 1 }
+                    if isTopLevel { noteError(path, e.fts_errno); result.failed += 1 }
                 default:
                     let ok = unlink(path) == 0
-                    if ok { result.bytes += size }
+                    if ok { result.bytes += size } else if errno != ENOENT { noteError(path, errno) }
                     if isTopLevel { if ok { result.removed += 1 } else { result.failed += 1 } }
                 }
             } else if info == FTS_F, isJunkFile((path as NSString).lastPathComponent) {
@@ -78,6 +93,7 @@ enum Sweeper {
                     result.removed += 1
                     result.bytes += size
                 } else if errno != ENOENT {  // ENOENT: "._x" already went away with its partner file
+                    noteError(path, errno)
                     result.failed += 1
                 }
             }

@@ -27,6 +27,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         watcher = DiskWatcher(
             isEnabled: { [weak self] in self?.cleanOnEject ?? false },
             onCleaned: { [weak self] name, result in
+                Self.log("eject", name, result)
                 if result.removed > 0 || result.failed > 0 || result.spotlightLeft { self?.notify(name, result) }
             })
 
@@ -119,6 +120,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         let name = Volumes.name(of: volume)
         work.async { [self] in
             let result = Sweeper.fullClean(volume: volume)
+            Self.log(thenEject ? "clean & eject" : "clean", name, result)
             guard thenEject else { return notify(name, result) }
             do {
                 try NSWorkspace.shared.unmountAndEjectDevice(at: volume)
@@ -126,6 +128,23 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             } catch {
                 notify(name, text: "\(result.summary). Couldn't eject — is a file still open?")
             }
+        }
+    }
+
+    /// Appends one entry per clean to ~/Library/Logs/Ejectus.log (kept under ~200 KB).
+    private static func log(_ trigger: String, _ name: String, _ result: SweepResult) {
+        let url = FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("Library/Logs/Ejectus.log")
+        var entry = "\(Date()) [\(trigger)] \(name): \(result.summary)\n"
+        for error in result.errors { entry += "    \(error)\n" }
+        if let size = try? url.resourceValues(forKeys: [.fileSizeKey]).fileSize, size > 200_000 {
+            try? FileManager.default.removeItem(at: url)
+        }
+        if let handle = try? FileHandle(forWritingTo: url) {
+            handle.seekToEndOfFile()
+            handle.write(Data(entry.utf8))
+            try? handle.close()
+        } else {
+            try? Data(entry.utf8).write(to: url)
         }
     }
 
