@@ -26,7 +26,8 @@ final class DiskWatcher {
         guard isEnabled(),
               let desc = DADiskCopyDescription(disk) as? [CFString: Any],
               let url = desc[kDADiskDescriptionVolumePathKey] as? URL,
-              Volumes.isEligible(url)
+              Volumes.isEligible(url),
+              !UserDefaults.standard.isSkipped(url)
         else { return }
 
         let result = Sweeper.fullClean(volume: url, deadline: Date().addingTimeInterval(15),

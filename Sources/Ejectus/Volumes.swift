@@ -36,6 +36,11 @@ enum Volumes {
         (try? url.resourceValues(forKeys: [.volumeURLKey]))?.volume?.standardizedFileURL
     }
 
+    /// Stable identity for per-drive settings: the volume UUID (FAT/exFAT have one too).
+    static func id(of url: URL) -> String {
+        (try? url.resourceValues(forKeys: [.volumeUUIDStringKey]))?.volumeUUIDString ?? "name:\(name(of: url))"
+    }
+
     static func name(of url: URL) -> String {
         (try? url.resourceValues(forKeys: [.volumeLocalizedNameKey]))?.volumeLocalizedName
             ?? url.lastPathComponent

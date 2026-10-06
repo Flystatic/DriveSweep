@@ -13,6 +13,8 @@ Removes macOS junk (`.DS_Store`, `._*`, `.Spotlight-V100`, `.fseventsd`, `.Trash
 - **Eject:** cleans automatically when you eject (toggle in the menu bar icon)
 - **Menu bar icon:** Clean & Eject per drive, plus switches for Clean When Ejecting,
   Empty Drive Trash (on by default; off keeps `.Trashes`), and Open at Login
+- **Skip This Drive:** per-drive switch in the menu. Skipped drives (e.g. Mac-only editing
+  drives) are never cleaned; their menu item becomes a plain Eject
 - **Log:** every clean is recorded in `~/Library/Logs/Ejectus.log`
 
 There's no plain "Clean" button: while a drive stays plugged in, macOS rebuilds

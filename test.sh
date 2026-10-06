@@ -92,5 +92,22 @@ $BIN --clean "$VOL" --keep-trash
 [[ -f $VOL/Photos/keep.jpg ]] && echo "PASS (keep-trash): real files kept" || { echo "FAIL (keep-trash): real file missing"; fail=1; }
 diskutil eject "$VOL" >/dev/null
 
+echo "== Test 5: a skipped drive is left alone on eject =="
+mount_img
+echo x > "$VOL/.DS_Store"
+UUID=$(diskutil info "$VOL" | awk -F': *' '/Volume UUID/{print $2}')
+HAD_SKIPS=$(defaults read local.ejectus skippedDrives >/dev/null 2>&1 && echo yes)
+defaults export local.ejectus "$TMP/prefs.plist" 2>/dev/null
+defaults write local.ejectus skippedDrives -array-add "$UUID"
+$BIN & APP_PID=$!
+sleep 2
+diskutil eject "$VOL" >/dev/null
+kill $APP_PID 2>/dev/null
+# Put the user's skip list back exactly as it was.
+if [[ -n $HAD_SKIPS ]]; then defaults import local.ejectus "$TMP/prefs.plist"; else defaults delete local.ejectus skippedDrives; fi
+mount_img
+[[ -e $VOL/.DS_Store ]] && echo "PASS (skip): junk left on skipped drive" || { echo "FAIL (skip): skipped drive was cleaned"; fail=1; }
+diskutil eject "$VOL" >/dev/null
+
 rm -rf "$TMP"
 exit $fail

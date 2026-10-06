@@ -50,6 +50,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
                 notify(Volumes.name(of: volume), text: "Skipped — not an external drive")
                 continue
             }
+            guard !defaults.isSkipped(volume) else {
+                notify(Volumes.name(of: volume), text: "Skipped — this drive is set to be skipped")
+                continue
+            }
             clean(volume, thenEject: false)
         }
     }
@@ -65,11 +69,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         for drive in drives {
             let header = menu.addItem(withTitle: Volumes.name(of: drive), action: nil, keyEquivalent: "")
             header.image = NSImage(systemSymbolName: "externaldrive", accessibilityDescription: nil)
+            let skipped = defaults.isSkipped(drive)
             // No plain "Clean": macOS rebuilds Spotlight/fseventsd while a drive stays mounted.
-            let item = menu.addItem(withTitle: "Clean & Eject", action: #selector(menuCleanAndEject(_:)), keyEquivalent: "")
+            let item = menu.addItem(withTitle: skipped ? "Eject" : "Clean & Eject",
+                                    action: #selector(menuCleanAndEject(_:)), keyEquivalent: "")
             item.target = self
             item.indentationLevel = 1
             item.representedObject = drive
+            let skip = menu.addItem(withTitle: "Skip This Drive", action: #selector(toggleSkip(_:)), keyEquivalent: "")
+            skip.target = self
+            skip.indentationLevel = 1
+            skip.representedObject = drive
+            skip.state = skipped ? .on : .off
         }
         menu.addItem(.separator())
 
@@ -98,7 +109,20 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
     @objc private func menuCleanAndEject(_ sender: NSMenuItem) {
         guard let drive = sender.representedObject as? URL else { return }
-        clean(drive, thenEject: true)
+        if defaults.isSkipped(drive) {
+            let name = Volumes.name(of: drive)
+            work.async { [self] in
+                do { try NSWorkspace.shared.unmountAndEjectDevice(at: drive) }
+                catch { notify(name, text: "Couldn't eject — is a file still open?") }
+            }
+        } else {
+            clean(drive, thenEject: true)
+        }
+    }
+
+    @objc private func toggleSkip(_ sender: NSMenuItem) {
+        guard let drive = sender.representedObject as? URL else { return }
+        defaults.setSkipped(drive, !defaults.isSkipped(drive))
     }
 
     @objc private func toggleCleanOnEject() { cleanOnEject.toggle() }
@@ -171,5 +195,16 @@ extension UserDefaults {
     var emptyDriveTrash: Bool {
         get { object(forKey: "emptyDriveTrash") as? Bool ?? true }
         set { set(newValue, forKey: "emptyDriveTrash") }
+    }
+
+    /// Drives the user chose never to clean (by volume UUID).
+    func isSkipped(_ volume: URL) -> Bool {
+        (stringArray(forKey: "skippedDrives") ?? []).contains(Volumes.id(of: volume))
+    }
+
+    func setSkipped(_ volume: URL, _ skip: Bool) {
+        var ids = Set(stringArray(forKey: "skippedDrives") ?? [])
+        if skip { ids.insert(Volumes.id(of: volume)) } else { ids.remove(Volumes.id(of: volume)) }
+        set(Array(ids), forKey: "skippedDrives")
     }
 }
