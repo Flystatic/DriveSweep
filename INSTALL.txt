@@ -15,7 +15,9 @@ INSTALL
 USE
 - Eject a drive normally: it is cleaned first.
 - Or right-click a drive in Finder > Services > Clean Junk Files.
-- Or use the menu bar icon: Clean / Clean & Eject.
+- Or use the menu bar icon: Clean & Eject.
+- Menu switches: Clean When Ejecting, Empty Drive Trash (on by default),
+  Open at Login. Every clean is logged to ~/Library/Logs/Ejectus.log.
 
 Only external drives are touched. Never your main disk, Time Machine, or network drives.
 Note: deleting ._ files also removes Finder tags/labels on files on that drive.
